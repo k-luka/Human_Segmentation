@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeepLabV3 Segmentation Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <h1>DeepLabV3 Segmentation Demo</h1>
+    <p>Select an image to segment the person parts using a DeepLabV3 model.</p>
+
+    <!-- File input and upload button -->
+    <input type="file" id="file-input" accept="image/*" />
+    <button id="upload-btn">Segment Image</button>
+
+    <!-- Preview of selected image -->
+    <div id="preview-container">
+      <img id="preview" src="#" alt="Image Preview" style="display: none;" />
+    </div>
+
+    <!-- Result images (overlay and mask) -->
+    <div id="result-container" style="display: none;">
+      <h2>Results</h2>
+      <div class="result-image">
+        <h3>Overlay</h3>
+        <img id="overlay-img" class="output-image" alt="Segmentation Overlay" />
+      </div>
+      <div class="result-image">
+        <h3>Segmentation Mask</h3>
+        <img id="mask-img" class="output-image" alt="Segmentation Mask" />
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

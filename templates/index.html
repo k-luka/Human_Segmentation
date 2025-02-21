@@ -22,12 +22,18 @@
 
     <!-- Live Segmentation Interface -->
     <div id="live-container">
+      <!-- Model selection dropdown -->
+      <label for="model-select">Choose Model: </label>
+      <select id="model-select">
+        <option value="mobilenet" selected>MobileNet</option>
+        <option value="resnet">ResNet</option>
+      </select>
       <button id="live-btn">Start Live Segment</button>
       <div id="video-container" style="position: relative; display: none;">
         <video id="videoElement" width="512" height="512" autoplay playsinline></video>
         <!-- Live overlay positioned on top of the video -->
         <img id="live-overlay" src="#" alt="Live Segmentation Overlay" 
-             style="position: absolute; top: 0; left: 0; width: 640px; height: 480px; pointer-events: none;">
+             style="position: absolute; top: 0; left: 0; width: 512px; height: 512px; pointer-events: none;">
       </div>
     </div>
 

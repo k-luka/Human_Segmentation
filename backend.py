@@ -8,19 +8,25 @@ import torch
 
 app = Flask(__name__)
 
-# Load the TorchScript DeepLabV3 model at startup
+# Device setup
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = torch.jit.load('deeplabv3_person_parts_traced.pt', map_location=device)
-model.eval()
 
-# Define a fixed color palette for 5 classes:
-# 0: background, 1: head, 2: torso, 3: arms, 4: legs
+# Load both models at startup
+# ResNet-based model
+model_resnet = torch.jit.load('deeplabv3_person_parts_traced.pt', map_location=device)
+model_resnet.eval()
+
+# MobileNet-based model
+model_mobilenet = torch.jit.load('deeplabv3_mobilenet_person_parts_traced.pt', map_location=device)
+model_mobilenet.eval()
+
+# Fixed color palette for 5 classes: 0: bg, 1: head, 2: torso, 3: arms, 4: legs
 PALETTE_5 = np.array([
-    (0, 0, 0),       # class 0 - background: black
-    (128, 0, 0),     # class 1 - head: maroon
-    (0, 128, 0),     # class 2 - torso: green
-    (0, 0, 128),     # class 3 - arms: navy
-    (128, 0, 128)    # class 4 - legs: purple
+    (0, 0, 0),
+    (128, 0, 0),
+    (0, 128, 0),
+    (0, 0, 128),
+    (128, 0, 128)
 ], dtype=np.uint8)
 
 @app.route('/')
@@ -30,14 +36,29 @@ def index():
 
 @app.route('/segment', methods=['POST'])
 def segment():
-    """Handle image input (file upload or JSON base64), resize for model input, perform segmentation, and return results."""
-    # Check if image data is sent as JSON (for live segmentation)
+    # Determine model type from JSON key or query string (default 'mobilenet')
+    model_type = 'resnet'
+    if request.is_json:
+        data = request.get_json()
+        print("Received JSON payload:", data)
+        model_type = data.get('model', 'mobilenet').lower()
+    else:
+        model_type = request.args.get('model', 'resnet').lower()
+    
+    print("Selected model:", model_type)  # Debug: Log model selection
+
+    # Select model based on model_type
+    if model_type == 'resnet':
+        current_model = model_resnet
+    else:
+        current_model = model_mobilenet
+
+    # Handle image input (file upload or JSON base64)
     if request.is_json:
         data = request.get_json()
         if 'image' not in data:
             return jsonify({'error': 'No image provided in JSON'}), 400
         img_data = data['image']
-        # Remove header if present (e.g., "data:image/png;base64,")
         if ',' in img_data:
             img_data = img_data.split(',')[1]
         try:
@@ -45,17 +66,15 @@ def segment():
             original_image = Image.open(BytesIO(image_bytes)).convert('RGB')
         except Exception as e:
             return jsonify({'error': f'Invalid image data: {str(e)}'}), 400
-    # Else, check for file upload
     elif 'file' in request.files and request.files['file'].filename != '':
         file = request.files['file']
         original_image = Image.open(file.stream).convert('RGB')
     else:
         return jsonify({'error': 'No valid image provided'}), 400
 
-    # Keep a copy of original image and get its dimensions
     orig_width, orig_height = original_image.size
 
-    # Resize the image for inference if needed: maximum dimension 800
+    # Resize for inference (max dimension 800)
     max_dim = 800
     if orig_width > max_dim or orig_height > max_dim:
         scale_factor = min(max_dim / orig_width, max_dim / orig_height)
@@ -65,46 +84,42 @@ def segment():
     else:
         resized_image = original_image.copy()
 
-    # Preprocess the resized image for the model
+    # Preprocess: convert to normalized tensor
     img_array = np.array(resized_image).astype(np.float32) / 255.0
-    # Normalize using ImageNet mean and std
     img_array[:, :, 0] = (img_array[:, :, 0] - 0.485) / 0.229
     img_array[:, :, 1] = (img_array[:, :, 1] - 0.456) / 0.224
     img_array[:, :, 2] = (img_array[:, :, 2] - 0.406) / 0.225
     img_tensor = torch.from_numpy(img_array.transpose(2, 0, 1)).unsqueeze(0).to(device)
 
-    # Run the model on the resized image to get the segmentation output
     with torch.no_grad():
-        output = model(img_tensor)
+        output = current_model(img_tensor)
     if isinstance(output, dict):
         out_tensor = output.get('out', list(output.values())[0])
     elif isinstance(output, (list, tuple)):
         out_tensor = output[0]
     else:
         out_tensor = output
-    # Predicted mask (on resized image) with values 0-4
+
     mask_tensor = out_tensor.squeeze(0).argmax(dim=0).to('cpu')
     mask_small = mask_tensor.numpy().astype(np.int32)
 
-    # Resize the mask back to the original image resolution using nearest-neighbor
+    # Resize mask back to original resolution
     mask_pil_small = Image.fromarray(mask_small.astype(np.uint8))
     mask_pil = mask_pil_small.resize((orig_width, orig_height), resample=Image.NEAREST)
     mask = np.array(mask_pil).astype(np.int32)
 
-    # Create the segmentation mask image using the fixed 5-class palette
-    color_mask = PALETTE_5[mask]  # shape (H, W, 3)
+    color_mask = PALETTE_5[mask]
     mask_img = Image.fromarray(color_mask.astype(np.uint8))
 
-    # Generate overlay image: blend the original image with the segmentation mask overlay
+    # Generate overlay image
     original_rgba = original_image.convert('RGBA')
     overlay_rgba = Image.fromarray(color_mask.astype(np.uint8)).convert('RGBA')
-    # Set alpha channel: 128 (~50% transparency) for non-background pixels, 0 for background
     alpha_mask = (mask > 0).astype(np.uint8) * 128
     alpha_channel = Image.fromarray(alpha_mask, mode='L')
     overlay_rgba.putalpha(alpha_channel)
     overlay_result = Image.alpha_composite(original_rgba, overlay_rgba).convert('RGB')
 
-    # Encode images to base64 strings for display in the frontend
+    # Encode to base64
     buf1 = BytesIO()
     overlay_result.save(buf1, format='PNG')
     overlay_data = base64.b64encode(buf1.getvalue()).decode('utf-8')

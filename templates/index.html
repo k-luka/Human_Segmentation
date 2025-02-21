@@ -14,6 +14,7 @@
       position: relative;
       display: none;
     }
+    
     #videoElement, #live-overlay {
       width: 512px;
       height: 512px;
@@ -35,6 +36,19 @@
       <img id="preview" src="#" alt="Image Preview" style="display: none;" />
     </div>
 
+    <!-- Result images (overlay and mask) for file upload -->
+    <div id="result-container" style="display: none;">
+      <h2>Results</h2>
+      <div class="result-image">
+        <h3>Overlay</h3>
+        <img id="overlay-img" class="output-image" alt="Segmentation Overlay" />
+      </div>
+      <div class="result-image">
+        <h3>Segmentation Mask</h3>
+        <img id="mask-img" class="output-image" alt="Segmentation Mask" />
+      </div>
+    </div>
+
     <!-- Live Segmentation Interface -->
     <div id="live-container">
       <!-- Model selection dropdown -->
@@ -48,19 +62,6 @@
         <video id="videoElement" autoplay playsinline></video>
         <!-- Live overlay positioned on top of the video -->
         <img id="live-overlay" src="#" alt="Live Segmentation Overlay" style="pointer-events: none;">
-      </div>
-    </div>
-
-    <!-- Result images (overlay and mask) for file upload -->
-    <div id="result-container" style="display: none;">
-      <h2>Results</h2>
-      <div class="result-image">
-        <h3>Overlay</h3>
-        <img id="overlay-img" class="output-image" alt="Segmentation Overlay" />
-      </div>
-      <div class="result-image">
-        <h3>Segmentation Mask</h3>
-        <img id="mask-img" class="output-image" alt="Segmentation Mask" />
       </div>
     </div>
   </div>

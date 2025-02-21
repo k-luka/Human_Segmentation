@@ -102,5 +102,5 @@ function startLiveSegmentation() {
       }
     })
     .catch(err => console.error('Live segmentation fetch error:', err));
-  }, 400); // 1 frame per second
+  }, 400); // 1 frame per 0.4 second
 }

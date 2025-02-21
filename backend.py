@@ -43,7 +43,7 @@ def segment():
     orig_width, orig_height = original_image.size
 
     # Resize the image for inference if needed: maximum dimension 800
-    max_dim = 256
+    max_dim = 512
     if orig_width > max_dim or orig_height > max_dim:
         scale_factor = min(max_dim / orig_width, max_dim / orig_height)
         new_width = int(orig_width * scale_factor)

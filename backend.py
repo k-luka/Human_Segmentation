@@ -30,20 +30,33 @@ def index():
 
 @app.route('/segment', methods=['POST'])
 def segment():
-    """Handle image upload, resize for model input, perform segmentation, and return results."""
-    # Ensure a file was sent
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
+    """Handle image input (file upload or JSON base64), resize for model input, perform segmentation, and return results."""
+    # Check if image data is sent as JSON (for live segmentation)
+    if request.is_json:
+        data = request.get_json()
+        if 'image' not in data:
+            return jsonify({'error': 'No image provided in JSON'}), 400
+        img_data = data['image']
+        # Remove header if present (e.g., "data:image/png;base64,")
+        if ',' in img_data:
+            img_data = img_data.split(',')[1]
+        try:
+            image_bytes = base64.b64decode(img_data)
+            original_image = Image.open(BytesIO(image_bytes)).convert('RGB')
+        except Exception as e:
+            return jsonify({'error': f'Invalid image data: {str(e)}'}), 400
+    # Else, check for file upload
+    elif 'file' in request.files and request.files['file'].filename != '':
+        file = request.files['file']
+        original_image = Image.open(file.stream).convert('RGB')
+    else:
+        return jsonify({'error': 'No valid image provided'}), 400
 
-    # Open the image and convert to RGB; keep a copy of the original image for overlay
-    original_image = Image.open(file.stream).convert('RGB')
+    # Keep a copy of original image and get its dimensions
     orig_width, orig_height = original_image.size
 
     # Resize the image for inference if needed: maximum dimension 800
-    max_dim = 512
+    max_dim = 800
     if orig_width > max_dim or orig_height > max_dim:
         scale_factor = min(max_dim / orig_width, max_dim / orig_height)
         new_width = int(orig_width * scale_factor)
@@ -51,7 +64,7 @@ def segment():
         resized_image = original_image.resize((new_width, new_height), resample=Image.LANCZOS)
     else:
         resized_image = original_image.copy()
-    
+
     # Preprocess the resized image for the model
     img_array = np.array(resized_image).astype(np.float32) / 255.0
     # Normalize using ImageNet mean and std

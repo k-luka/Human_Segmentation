@@ -9,9 +9,9 @@
 <body>
   <div class="container">
     <h1>DeepLabV3 Segmentation Demo</h1>
-    <p>Select an image to segment the person parts using a DeepLabV3 model.</p>
+    <p>Select an image to segment person parts or try live segmentation from your camera.</p>
 
-    <!-- File input and upload button -->
+    <!-- File Upload Interface -->
     <input type="file" id="file-input" accept="image/*" />
     <button id="upload-btn">Segment Image</button>
 
@@ -20,7 +20,18 @@
       <img id="preview" src="#" alt="Image Preview" style="display: none;" />
     </div>
 
-    <!-- Result images (overlay and mask) -->
+    <!-- Live Segmentation Interface -->
+    <div id="live-container">
+      <button id="live-btn">Start Live Segment</button>
+      <div id="video-container" style="position: relative; display: none;">
+        <video id="videoElement" width="640" height="480" autoplay playsinline></video>
+        <!-- Live overlay positioned on top of the video -->
+        <img id="live-overlay" src="#" alt="Live Segmentation Overlay" 
+             style="position: absolute; top: 0; left: 0; width: 640px; height: 480px; pointer-events: none;">
+      </div>
+    </div>
+
+    <!-- Result images (overlay and mask) for file upload -->
     <div id="result-container" style="display: none;">
       <h2>Results</h2>
       <div class="result-image">

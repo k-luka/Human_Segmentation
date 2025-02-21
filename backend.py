@@ -36,16 +36,18 @@ def index():
 
 @app.route('/segment', methods=['POST'])
 def segment():
-    # Determine model type from JSON key or query string (default 'mobilenet')
-    model_type = 'resnet'
+    # Determine model type from JSON, form data, or query string
     if request.is_json:
         data = request.get_json()
         print("Received JSON payload:", data)
         model_type = data.get('model', 'mobilenet').lower()
+    elif 'file' in request.files and request.files['file'].filename != '':
+        # Read model from form data for file uploads
+        model_type = request.form.get('model', 'mobilenet').lower()
     else:
         model_type = request.args.get('model', 'resnet').lower()
     
-    print("Selected model:", model_type)  # Debug: Log model selection
+    print("Selected model:", model_type)
 
     # Select model based on model_type
     if model_type == 'resnet':

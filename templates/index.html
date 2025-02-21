@@ -20,16 +20,33 @@
       height: 512px;
       display: block;
     }
+    
+    /* Center controls in container */
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Segmentation Demo</h1>
-    <p>Select an image to segment person parts or try live segmentation from your camera.</p>
-
+    <p>Choose model, then select an image to segment person parts or try live segmentation from your camera.</p>
+    
+    <!-- Model selection dropdown (applies to both modes) -->
+    <div class="controls">
+      <label for="model-select">Choose Model: </label>
+      <select id="model-select">
+        <option value="mobilenet" selected>MobileNet</option>
+        <option value="resnet">ResNet</option>
+      </select>
+    </div>
+    
     <!-- File Upload Interface -->
-    <input type="file" id="file-input" accept="image/*" />
-    <button id="upload-btn">Segment Image</button>
+    <div class="controls">
+      <input type="file" id="file-input" accept="image/*" />
+      <button id="upload-btn">Segment Image</button>
+    </div>
 
     <!-- Preview of selected image -->
     <div id="preview-container">
@@ -51,13 +68,9 @@
 
     <!-- Live Segmentation Interface -->
     <div id="live-container">
-      <!-- Model selection dropdown -->
-      <label for="model-select">Choose Model: </label>
-      <select id="model-select">
-        <option value="mobilenet" selected>MobileNet</option>
-        <option value="resnet">ResNet</option>
-      </select>
-      <button id="live-btn">Start Live Segment</button>
+      <div class="controls">
+        <button id="live-btn">Start Live Segment</button>
+      </div>
       <div id="video-container">
         <video id="videoElement" autoplay playsinline></video>
         <!-- Live overlay positioned on top of the video -->
